@@ -1,0 +1,4 @@
+example_*/*_app
+*.o
+*.bin
+.vscode/
