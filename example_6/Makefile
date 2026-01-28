@@ -1,26 +1,32 @@
-# Настройки компилятора
-CC = gcc
-CFLAGS = -Wall -Werror -std=c11 -g
-LIBS = -lm
+# Параметры сборки
+CC     = gcc
+CFLAGS = -Wall -Werror -std=c17 -g
+LIBS   = -lm
 
 # Имена файлов (меняются только здесь)
-TARGET = student_app
-OBJS = main.o student_list.o
+TARGET      = student_app
+TEST_TARGET = test_suite
+COMMON_OBJS = student_list.o
 
-# Главная цель
+# Сборка
 all: $(TARGET)
 
-# Линковка: сборка исполняемого файла из объектных
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS) $(LIBS)
+$(TARGET): main.o $(COMMON_OBJS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
-# Компиляция: превращение .c файлов в объектные .o
-# Символ % — это шаблон, который подходит к любому имени файла
+# Тесты
+test: $(TEST_TARGET)
+	./$(TEST_TARGET)
+
+$(TEST_TARGET): tests.o $(COMMON_OBJS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+
+# Компиляция
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Очистка проекта от временных файлов
+# Очистка
 clean:
-	rm -f *.o $(TARGET)
+	rm -f *.o $(TARGET) $(TEST_TARGET)
 
-.PHONY: all clean
+.PHONY: all test clean
