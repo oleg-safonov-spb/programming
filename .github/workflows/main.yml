@@ -1,0 +1,57 @@
+name: C Development CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc make
+
+      - name: Process all examples
+        run: |
+          FAILED=0
+          # Перебираем все папки, начинающиеся на example_
+          for dir in example_*/; do
+            # Пропускаем, если это не директория
+            [ -d "$dir" ] || continue
+
+            echo "::group::Testing ${dir%/}"
+
+            # Запускаем в subshell, чтобы ошибки и cd были локальными
+            (
+              set -e  # Немедленный выход при ошибке внутри этого блока
+              cd "$dir"
+
+              if [ -f Makefile ]; then
+                echo "Building with Makefile..."
+                make clean all
+
+                if grep -q "test:" Makefile; then
+                  echo "Running asserts..."
+                  make test
+                fi
+              elif [ -f main.c ]; then
+                echo "Compiling main.c directly..."
+                gcc -Wall -Werror -std=c17 main.c -o app
+              else
+                echo "No Makefile or main.c found, skipping."
+              fi
+            ) || { echo "::error file=${dir%/}::Build or test failed"; FAILED=1; }
+
+            echo "::endgroup::"
+
+            # Если хоть один пример упал, выходим с ошибкой после закрытия группы
+            if [ $FAILED -ne 0 ]; then exit 1; fi
+          done
